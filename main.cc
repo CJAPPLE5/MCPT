@@ -59,10 +59,21 @@ int main(int argc, char **argv)
         "../../scenes/staircase/staircase.xml",
         "../../scenes/veach-mis/veach-mis.xml",
     };
+<<<<<<< HEAD
     int test_scene = 2;
     if (argc > 1)
     {
         test_scene = std::stoi(argv[1]);
+=======
+    int test_scene = 0;
+    if (argc > 1)
+    {
+        xml_path = std::string(argv[1]);
+    }
+    else
+    {
+        xml_path = xml_paths[test_scene];
+>>>>>>> c373f1e7b356f3e2e01f93cdd5df8ea00d195eaf
     }
     xml_path = xml_paths[test_scene];
 
@@ -76,17 +87,32 @@ int main(int argc, char **argv)
     {
         rp.spp = std::stoi(argv[2]);
     }
+<<<<<<< HEAD
     std::vector<int> test_spps = {16, 32, 64, 128, 256, 512, 1024};
     // std::vector<int> test_spps = {2048, 4096};
     for (int i = 0; i < test_spps.size(); i++)
     {
         unsigned char *img = new unsigned char[rp.image_height * rp.image_width * 3];
         rp.spp = test_spps[i];
+=======
+    // std::vector<int> ssp_test = {16, 32, 64, 128, 256, 512, 1024};
+    std::vector<int> ssp_test = {2048, 4096};
+    for (int i = 0; i < ssp_test.size(); i++)
+    {
+        rp.spp = ssp_test[i];
+        unsigned char *img = new unsigned char[rp.image_height * rp.image_width * 3];
+
+>>>>>>> c373f1e7b356f3e2e01f93cdd5df8ea00d195eaf
         print_render_info(rp);
 
         for (int j = rp.image_height - 1; j >= 0; --j)
         {
+<<<<<<< HEAD
             std::cerr << "\rspp: " << rp.spp << " Scanlines remaining: " << j << ' ' << std::flush;
+=======
+            std::cerr << "\rssp:" << rp.spp
+                      << " Scanlines remaining: " << j << ' ' << std::flush;
+>>>>>>> c373f1e7b356f3e2e01f93cdd5df8ea00d195eaf
 #pragma omp parallel for
             for (int i = 0; i < rp.image_width; ++i)
             {
