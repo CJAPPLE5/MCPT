@@ -140,7 +140,9 @@ public:
         // x = y - 0;
         const double color_scale = 1.0 / 255.0;
         auto pixel = data + y * bytes_per_scanline + x * bytes_per_pixel;
-
+        double r = std::pow(color_scale * pixel[0], 2.2);
+        double g = std::pow(color_scale * pixel[1], 2.2);
+        double b = std::pow(color_scale * pixel[2], 2.2);
         return color(color_scale * pixel[0], color_scale * pixel[1], color_scale * pixel[2]);
     }
 

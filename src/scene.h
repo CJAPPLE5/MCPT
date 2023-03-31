@@ -323,12 +323,12 @@ bool Scene::loadobj(std::string obj_path)
                    static_cast<double>(attrib.normals[idx2.normal_index * 3 + 1]),
                    static_cast<double>(attrib.normals[idx2.normal_index * 3 + 2]));
 
-            vec3 tex0(move(static_cast<double>(attrib.texcoords[idx0.texcoord_index * 2])),
-                      move(static_cast<double>(attrib.texcoords[idx0.texcoord_index * 2 + 1])), 0.0);
-            vec3 tex1(move(static_cast<double>(attrib.texcoords[idx1.texcoord_index * 2])),
-                      move(static_cast<double>(attrib.texcoords[idx1.texcoord_index * 2 + 1])), 0.0);
-            vec3 tex2(move(static_cast<double>(attrib.texcoords[idx2.texcoord_index * 2])),
-                      move(static_cast<double>(attrib.texcoords[idx2.texcoord_index * 2 + 1])), 0.0);
+            vec3 tex0(static_cast<double>(attrib.texcoords[idx0.texcoord_index * 2]),
+                      static_cast<double>(attrib.texcoords[idx0.texcoord_index * 2 + 1]), 0.0);
+            vec3 tex1(static_cast<double>(attrib.texcoords[idx1.texcoord_index * 2]),
+                      static_cast<double>(attrib.texcoords[idx1.texcoord_index * 2 + 1]), 0.0);
+            vec3 tex2(static_cast<double>(attrib.texcoords[idx2.texcoord_index * 2]),
+                      static_cast<double>(attrib.texcoords[idx2.texcoord_index * 2 + 1]), 0.0);
 
             std::string material_name = obj_materials[obj_shapes[i].mesh.material_ids[f]].name;
             // elements[base_size + index_offset / 3] = make_shared<triangle>(p0, p1, p2, n0, n1, n2, materials[material_name]);
