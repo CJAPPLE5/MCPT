@@ -59,13 +59,14 @@ int main(int argc, char **argv)
         "../../scenes/staircase/staircase.xml",
         "../../scenes/veach-mis/veach-mis.xml",
     };
+    int test_scene = 0;
     if (argc > 1)
     {
         xml_path = std::string(argv[1]);
     }
     else
     {
-        xml_path = xml_paths[1];
+        xml_path = xml_paths[test_scene];
     }
 
     if (!init(xml_path, cam, scene, rp))
@@ -78,42 +79,49 @@ int main(int argc, char **argv)
     {
         rp.spp = std::stoi(argv[2]);
     }
-    unsigned char *img = new unsigned char[rp.image_height * rp.image_width * 3];
-
-    print_render_info(rp);
-
-    for (int j = rp.image_height - 1; j >= 0; --j)
+    // std::vector<int> ssp_test = {16, 32, 64, 128, 256, 512, 1024};
+    std::vector<int> ssp_test = {2048, 4096};
+    for (int i = 0; i < ssp_test.size(); i++)
     {
-        std::cerr << "\rScanlines remaining: " << j << ' ' << std::flush;
-#pragma omp parallel for
-        for (int i = 0; i < rp.image_width; ++i)
+        rp.spp = ssp_test[i];
+        unsigned char *img = new unsigned char[rp.image_height * rp.image_width * 3];
+
+        print_render_info(rp);
+
+        for (int j = rp.image_height - 1; j >= 0; --j)
         {
-            color pixel_color(0, 0, 0);
-            for (int s = 0; s < rp.spp; ++s)
+            std::cerr << "\rssp:" << rp.spp
+                      << " Scanlines remaining: " << j << ' ' << std::flush;
+#pragma omp parallel for
+            for (int i = 0; i < rp.image_width; ++i)
             {
-                auto u = (i + random_double()) / (rp.image_width);
-                auto v = (j + random_double()) / (rp.image_height);
-                // auto u = float(i + 0.5) / (image_width);
-                // auto v = float(j + 0.5) / (image_height);
-                ray r = cam.get_ray(u, v);
-                // pixel_color += ray_color(r, background, scene, lights, max_depth);
-                // if (temp_c[0] < 0 || temp_c[1] < 0 || temp_c[2] < 0)
-                // {
-                //     std::cout << "nmsl";
-                // }
-                pixel_color += scene.shade(r, 0);
-                // if (temp_c[1] == 1.0 && temp_c[2] == 1.0)
-                // {
-                //     std::cout << "light" << pixel_color[0] << pixel_color[1] << pixel_color[2] << std::endl;
-                // }
+                color pixel_color(0, 0, 0);
+                for (int s = 0; s < rp.spp; ++s)
+                {
+                    auto u = (i + random_double()) / (rp.image_width);
+                    auto v = (j + random_double()) / (rp.image_height);
+                    // auto u = float(i + 0.5) / (image_width);
+                    // auto v = float(j + 0.5) / (image_height);
+                    ray r = cam.get_ray(u, v);
+                    // pixel_color += ray_color(r, background, scene, lights, max_depth);
+                    // if (temp_c[0] < 0 || temp_c[1] < 0 || temp_c[2] < 0)
+                    // {
+                    //     std::cout << "nmsl";
+                    // }
+                    pixel_color += scene.shade(r, 0);
+                    // if (temp_c[1] == 1.0 && temp_c[2] == 1.0)
+                    // {
+                    //     std::cout << "light" << pixel_color[0] << pixel_color[1] << pixel_color[2] << std::endl;
+                    // }
+                }
+                // write_color(pixel_color, samples_per_pixel);
+                write_color_xy(img, i, j, rp.image_width, pixel_color, rp.spp);
             }
-            // write_color(pixel_color, samples_per_pixel);
-            write_color_xy(img, i, j, rp.image_width, pixel_color, rp.spp);
         }
+        stbi_flip_vertically_on_write(true);
+        stbi_write_png(rp.getimgname().c_str(), rp.image_width, rp.image_height, 3, img, 0);
+        // stbi_write_png(rp.getimgname(true).c_str(), rp.image_width, rp.image_height, 3, img_gamma, 0);
     }
-    stbi_flip_vertically_on_write(true);
-    stbi_write_png(rp.getimgname().c_str(), rp.image_width, rp.image_height, 3, img, 0);
-    // stbi_write_png(rp.getimgname(true).c_str(), rp.image_width, rp.image_height, 3, img_gamma, 0);
     std::cerr << "/nDone./n";
 }
 
