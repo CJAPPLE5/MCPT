@@ -175,16 +175,16 @@ public:
             diffuse = diffuse * map_kd->value(rec.uv.x(), rec.uv.y(), rec.p);
         }
         vec3 temp_color = diffuse + specular;
-        if (temp_color.e[0] > 1 || temp_color.e[1] > 1 || temp_color.e[2] > 1)
-        {
-            auto len = (specular + diffuse);
+        // if (temp_color.e[0] > 1 || temp_color.e[1] > 1 || temp_color.e[2] > 1)
+        // {
+        //     auto len = (specular + diffuse);
 
-            specular = specular / len;
-            diffuse = diffuse / len;
-        }
+        //     specular = specular / len;
+        //     diffuse = diffuse / len;
+        // }
         specular *= std::pow(cos_nh, ns);
-
         return (diffuse / PI) + specular * ((ns + 2.0f) * (ns + 4.0f) / (8.0f * PI * (ns + std::pow(2.0, -ns / 2.0))));
+        // +specular *((ns + 2.0f) * (ns + 4.0f) / (8.0f * M_PI * (ns + std::pow(2.0, -ns / 2.0))));
     }
 
     void scatter_(

@@ -59,7 +59,7 @@ int main(int argc, char **argv)
         "../../scenes/staircase/staircase.xml",
         "../../scenes/veach-mis/veach-mis.xml",
     };
-    int test_scene = 0;
+    int test_scene = 1;
     if (argc > 1)
     {
         test_scene = std::stoi(argv[1]);
