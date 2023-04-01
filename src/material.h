@@ -164,9 +164,9 @@ public:
 
     vec3 brdf(const ray &r, const hit_record &rec, const scatter_record &srec)
     {
-        // return kd / PI;
         vec3 wi = -r.dir, wo = srec.scatter_ray.dir;
         vec3 h = normalize(wi + wo);
+
         double cos_nh = fmax(0.0, dot(rec.normal, h));
         vec3 diffuse = kd;
         vec3 specular = ks;
@@ -201,6 +201,7 @@ public:
         double p = pdiffus / (pdiffus + preflec);
         if (st == REFRACT)
         {
+            // std::cout << "refra";
             vec3 temp_n = rec.normal;
             if (dot(wi, rec.normal) < 0)
             {
@@ -229,6 +230,7 @@ public:
         }
         else
         {
+            // std::cout << "reflec";
             srec.scatter_ray.dir = random_hemisphere_specular(-r_in.dir, rec.normal, ns, srec.pdf, p);
             srec.pdf *= (1 - prefrac);
             srec.scatter_type = REFLECT;

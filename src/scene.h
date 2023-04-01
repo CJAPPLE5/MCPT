@@ -42,6 +42,7 @@ class Scene : public hittable
 public:
     Scene()
     {
+        mesh_count = 0;
         environment = make_shared<solid_color>(0.2, 0.2, 0.2);
     };
 
@@ -54,6 +55,7 @@ public:
     }
 
     color shade(const ray &r, int depth);
+    color shade_(const ray &r, hit_record &rec, int depth);
     color draw(const ray &r);
     bool hit(
         const ray &r, double t_min, double t_max, hit_record &rec) const;
@@ -61,43 +63,46 @@ public:
     bool bounding_box(double time0, double time1, aabb &output_box) const;
     double pdf_value(const vec3 &o, const vec3 &v) const;
     vec3 sample(const vec3 &o) const;
+    void sample_light(vec3 &light_position, double &pdf, double &light_area);
 
 private:
     // std::vector<shared_ptr<hittable>> elements;
     // std::vector<shared_ptr<hittable>> elements;
     std::map<std::string, shared_ptr<material>> materials;
     std::vector<shared_ptr<Mesh>> meshes;
+    std::vector<shared_ptr<Mesh>> lights;
+    std::vector<double> lights_area_ratio;
     // shared_ptr<bvh_node> bvh_root;
     shared_ptr<texture> environment;
+    double lights_area;
+    int mesh_count;
 };
+
+void Scene::sample_light(vec3 &light_position, double &pdf, double &light_area)
+{
+    double p = random_double();
+    auto iter = std::lower_bound(lights_area_ratio.begin(), lights_area_ratio.end(), p);
+    if (iter == lights_area_ratio.end())
+    {
+        iter = lights_area_ratio.begin();
+    }
+    int index = std::distance(lights_area_ratio.begin(), iter);
+    light_position = lights[index]->sample(vec3());
+    pdf = lights[index]->getArea() / lights_area;
+    light_area = lights[index]->getArea();
+}
 
 color Scene::draw(const ray &r)
 {
     double t_min = T_MIN, t_max = T_MAX;
     hit_record hit_rec;
-    hit(r, t_min, t_max, hit_rec);
-
-    // 啥都没中
-    if (hit_rec.t == T_MAX)
+    if (hit(r, t_min, t_max, hit_rec))
     {
-        // return vec3(1.0, 0.0, 0.0);
-        return environment->value(0, 0, r.orig);
-        // return vec3(255, 0, 0);
+        return shade_(r, hit_rec, 0);
     }
-    // 射中光源
-    // else if (hit_rec.mat_ptr->hasemission())
-    // {
-    //     // std::cout << "hit light";
-    //     // return vec3(1.0, 1.0, 1.0);
-    //     // std::cout << "hit light" << std::endl;
-    //     return hit_rec.mat_ptr->getEmission();
-    //     // return vec3(0, 255, 0);
-    // }
     else
     {
-        // return vec3(0.0, 0.0, 0.0);
-        // return normalize(hit_rec.normal);
-        return shade(r, SHADE_DEPTH);
+        return environment->value(0, 0, r.orig);
     }
 }
 
@@ -105,6 +110,10 @@ color Scene::shade(const ray &r, int depth)
 {
     color l_total, l_e, l_direct, l_indirect;
     hit_record rec;
+    if (depth == MAX_DEPTH)
+    {
+        return color();
+    }
     if (!hit(r, T_MIN, T_MAX, rec))
     {
         return color();
@@ -113,6 +122,109 @@ color Scene::shade(const ray &r, int depth)
     if (depth == 0 && rec.mat_ptr->hasemission())
     {
         l_e = rec.mat_ptr->getEmission();
+    }
+    if (!rec.mat_ptr->hasRefraction())
+    {
+        rec.normal = dot(rec.normal, -r.dir) >= 0 ? rec.normal : -rec.normal;
+    }
+
+    // {
+    //     double light_pdf, light_area;
+    //     point3 light_position;
+    //     sample_light(light_position, light_pdf, light_area);
+
+    //     vec3 light_dir = normalize(light_position - rec.p);
+    //     hit_record temp_rec;
+    // ray shadow_ray(rec.p, light_dir);
+    //     if (hit(shadow_ray, T_MIN, T_MAX, temp_rec) && temp_rec.mat_ptr->hasemission() &&
+    //         dot(temp_rec.normal, light_dir) < 0 && (temp_rec.p - light_position).length() < EPSILON)
+    //     {
+    //         double cos0 = fmax(dot(rec.normal, light_dir), 0.0);
+    //         double cos1 = fmax(dot(temp_rec.normal, -light_dir), 0.0);
+    //         vec3 brdf;
+    //         scatter_record temp_srec;
+    //         temp_srec.scatter_ray.orig = rec.p;
+    //         temp_srec.scatter_ray.dir = light_dir;
+    //         brdf = rec.mat_ptr->brdf(r, rec, temp_srec);
+    //         vec3 direct;
+    //         if (cos0 > 0 && cos1 > 0)
+    //         {
+    //             direct = brdf * temp_rec.mat_ptr->getEmission() * cos0 * cos1 *
+    //                      light_area / (light_position - rec.p).length_squared();
+    //             l_direct += direct;
+    //         }
+    //     }
+    // }
+    if (depth != 0)
+        for (auto &mesh : meshes)
+        {
+            color direct_light;
+            if (mesh->hasEmission())
+            {
+                for (size_t i = 0; i < SAMPLES_PER_LIGHT; i++)
+                {
+                    point3 light_position = mesh->sample(rec.normal);
+
+                    vec3 light_dir = normalize(light_position - rec.p);
+                    hit_record temp_rec;
+                    ray shadow_ray(rec.p, light_dir);
+                    if (hit(shadow_ray, T_MIN, T_MAX, temp_rec) && temp_rec.mesh_id == mesh->mesh_id &&
+                        dot(temp_rec.normal, light_dir) < 0 && (temp_rec.p - light_position).length() < EPSILON)
+                    {
+                        double cos0 = fmax(dot(rec.normal, light_dir), 0.0);
+                        double cos1 = fmax(dot(temp_rec.normal, -light_dir), 0.0);
+                        vec3 brdf;
+                        scatter_record temp_srec;
+                        temp_srec.scatter_ray.orig = rec.p;
+                        temp_srec.scatter_ray.dir = light_dir;
+                        brdf = rec.mat_ptr->brdf(r, rec, temp_srec);
+                        vec3 direct;
+                        if (cos0 > 0 && cos1 > 0)
+                        {
+                            direct = brdf * temp_rec.mat_ptr->getEmission() * cos0 * cos1 * mesh->getArea() / (light_position - rec.p).length_squared();
+                            direct_light += direct;
+                        }
+                    }
+                }
+                l_direct += direct_light / SAMPLES_PER_LIGHT;
+            }
+        }
+
+    // return l_direct + l_e;
+    if (random_double() < RUSSIAN_ROUETTE)
+    // if (0)
+    {
+        scatter_record srec;
+        rec.mat_ptr->scatter_(r, rec, srec);
+        double cos0 = dot(rec.normal, srec.scatter_ray.dir);
+        // hit_record rec_temp;
+        // hit(srec.scatter_ray, T_MIN, T_MAX, rec_temp);
+
+        if (srec.scatter_type == REFRACT)
+        {
+            l_indirect += shade(srec.scatter_ray, depth) * rec.mat_ptr->tr / srec.pdf / RUSSIAN_ROUETTE;
+        }
+        else
+        {
+            if (cos0 > 0 && srec.pdf > 0)
+            {
+                vec3 coeff = rec.mat_ptr->brdf(r, rec, srec) * cos0 / srec.pdf / RUSSIAN_ROUETTE;
+                l_indirect += coeff * shade(srec.scatter_ray, depth + 1);
+                // l_indirect += coeff * rec.mat_ptr->kd;
+            }
+        }
+    }
+    l_total = l_e + l_direct + l_indirect;
+    return l_total;
+}
+
+color Scene::shade_(const ray &r, hit_record &rec, int depth)
+{
+    color l_total, l_e, l_direct, l_indirect;
+
+    if (rec.mat_ptr->hasemission())
+    {
+        return rec.mat_ptr->getEmission();
     }
     if (!rec.mat_ptr->hasRefraction())
     {
@@ -131,7 +243,8 @@ color Scene::shade(const ray &r, int depth)
                 vec3 light_dir = normalize(light_position - rec.p);
                 hit_record temp_rec;
                 ray shadow_ray(rec.p, light_dir);
-                if (hit(shadow_ray, T_MIN, T_MAX, temp_rec) && dot(temp_rec.normal, light_dir) < 0 && (temp_rec.p - light_position).length() < EPSILON)
+                if (hit(shadow_ray, T_MIN, T_MAX, temp_rec) && temp_rec.mesh_id == mesh->mesh_id &&
+                    dot(temp_rec.normal, light_dir) < 0 && (temp_rec.p - light_position).length() < EPSILON)
                 {
                     double cos0 = fmax(dot(rec.normal, light_dir), 0.0);
                     double cos1 = fmax(dot(temp_rec.normal, -light_dir), 0.0);
@@ -151,6 +264,7 @@ color Scene::shade(const ray &r, int depth)
             l_direct += direct_light / SAMPLES_PER_LIGHT;
         }
     }
+
     // return l_direct + l_e;
     if (random_double() < RUSSIAN_ROUETTE)
     // if (0)
@@ -160,17 +274,24 @@ color Scene::shade(const ray &r, int depth)
         double cos0 = dot(rec.normal, srec.scatter_ray.dir);
         // hit_record rec_temp;
         // hit(srec.scatter_ray, T_MIN, T_MAX, rec_temp);
-
-        if (srec.scatter_type == REFRACT)
+        if (srec.pdf > 0)
         {
-            l_indirect += shade(srec.scatter_ray, depth + 1) * rec.mat_ptr->tr / srec.pdf / RUSSIAN_ROUETTE;
-        }
-        else
-        {
-            if (cos0 > 0 && srec.pdf > 0)
+            hit_record temp_rec;
+            if (hit(srec.scatter_ray, T_MIN, T_MAX, temp_rec) && !temp_rec.mat_ptr->hasemission())
             {
-                vec3 coeff = rec.mat_ptr->brdf(r, rec, srec) * cos0 / srec.pdf / RUSSIAN_ROUETTE;
-                l_indirect += coeff * shade(srec.scatter_ray, depth + 1);
+                if (srec.scatter_type == REFRACT)
+                {
+                    l_indirect += shade(srec.scatter_ray, depth) * rec.mat_ptr->tr / srec.pdf / RUSSIAN_ROUETTE;
+                }
+                else
+                {
+                    if (cos0 > 0 && srec.pdf > 0)
+                    {
+                        vec3 coeff = rec.mat_ptr->brdf(r, rec, srec) * cos0 / srec.pdf / RUSSIAN_ROUETTE;
+                        l_indirect += coeff * shade(srec.scatter_ray, depth + 1);
+                        // l_indirect += coeff * rec.mat_ptr->kd;
+                    }
+                }
             }
         }
     }
@@ -180,6 +301,7 @@ color Scene::shade(const ray &r, int depth)
 
 bool Scene::loadobj(std::string obj_path)
 {
+    lights_area = 0.0;
     std::cout << "read obj:" << obj_path << std::endl;
     std::map<std::string, vec3> light_radinaces;
     std::string base_path = obj_path.substr(0, obj_path.find_last_of('/'));
@@ -340,7 +462,25 @@ bool Scene::loadobj(std::string obj_path)
             temp_triangles[f] = make_shared<hittable>(p0, p1, p2, n0, n1, n2, tex0, tex1, tex2, materials[material_name]);
             index_offset += fnum;
         }
-        meshes.push_back(make_shared<Mesh>(temp_triangles));
+        shared_ptr<Mesh> temp_mesh = make_shared<Mesh>(temp_triangles, mesh_count++);
+        meshes.push_back(temp_mesh);
+        if (temp_mesh->hasEmission())
+        {
+            lights.push_back(temp_mesh);
+            if (lights_area_ratio.empty())
+            {
+                lights_area_ratio.push_back(temp_mesh->getArea());
+            }
+            else
+            {
+                lights_area_ratio.push_back(lights_area_ratio.back() + temp_mesh->getArea());
+            }
+            lights_area += temp_mesh->getArea();
+        }
+    }
+    for (int i = 1; i < lights_area_ratio.size(); i++)
+    {
+        lights_area_ratio[i] /= lights_area;
     }
     return true;
 }
