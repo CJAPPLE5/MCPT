@@ -50,6 +50,23 @@ bool init(std::string xml_path, camera &cam, Scene &scene, render_params &rp);
 int main(int argc, char **argv)
 {
 
+    image_texture it("../../scenes/staircase/textures/Wallpaper.jpg");
+    int t_width = it.get_width(), t_height = it.get_height();
+    unsigned char *t_img = new unsigned char[t_width * t_height * 3];
+    for (int j = 0; j < t_height; j++)
+    {
+        for (int i = 0; i < t_width; i++)
+        {
+            int index = j * t_width + i;
+            color c = it.value((i + 100 + 0.5) / t_width, (j + 200 + 0.5) / t_height, vec3());
+            int scale = 255;
+            t_img[index * 3] = scale * c.x();
+            t_img[index * 3 + 1] = scale * c.y();
+            t_img[index * 3 + 2] = scale * c.z();
+        }
+    }
+    stbi_write_png("texture.png", t_width, t_height, 3, t_img, 0);
+    // return 0;
     Scene scene;
     camera cam;
     std::string xml_path;
@@ -59,15 +76,13 @@ int main(int argc, char **argv)
         "../../scenes/staircase/staircase.xml",
         "../../scenes/veach-mis/veach-mis.xml",
     };
-    int test_scene = 0;
+    int test_scene = 1;
     if (argc > 1)
     {
-        xml_path = std::string(argv[1]);
+        test_scene = std::stoi(argv[1]);
     }
-    else
-    {
-        xml_path = xml_paths[test_scene];
-    }
+
+    xml_path = xml_paths[test_scene];
 
     if (!init(xml_path, cam, scene, rp))
     {
@@ -79,8 +94,8 @@ int main(int argc, char **argv)
     {
         rp.spp = std::stoi(argv[2]);
     }
-    // std::vector<int> ssp_test = {16, 32, 64, 128, 256, 512, 1024};
-    std::vector<int> ssp_test = {2048, 4096};
+    std::vector<int> ssp_test = {16, 32, 64, 128, 256, 512, 1024};
+    // std::vector<int> ssp_test = {2, 4, 8};
     for (int i = 0; i < ssp_test.size(); i++)
     {
         rp.spp = ssp_test[i];

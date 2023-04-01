@@ -114,6 +114,11 @@ color Scene::shade(const ray &r, int depth)
     {
         l_e = rec.mat_ptr->getEmission();
     }
+    if (rec.mat_ptr->hasTexture())
+    {
+        return rec.mat_ptr->map_kd->value(rec.uv.x(), rec.uv.y(), rec.p);
+    }
+
     if (!rec.mat_ptr->hasRefraction())
     {
         rec.normal = dot(rec.normal, -r.dir) >= 0 ? rec.normal : -rec.normal;
@@ -271,6 +276,7 @@ bool Scene::loadobj(std::string obj_path)
         bool has_texture = false;
         if (obj_materials[i].diffuse_texname.length() > 0)
         {
+            std::cout << "read texture:" << obj_materials[i].diffuse_texname << std::endl;
             temp_texture = make_shared<image_texture>((base_path + "/" + obj_materials[i].diffuse_texname).c_str());
             has_texture = true;
         }
@@ -323,12 +329,12 @@ bool Scene::loadobj(std::string obj_path)
                    static_cast<double>(attrib.normals[idx2.normal_index * 3 + 1]),
                    static_cast<double>(attrib.normals[idx2.normal_index * 3 + 2]));
 
-            vec3 tex0(move(static_cast<double>(attrib.texcoords[idx0.texcoord_index * 2])),
-                      move(static_cast<double>(attrib.texcoords[idx0.texcoord_index * 2 + 1])), 0.0);
-            vec3 tex1(move(static_cast<double>(attrib.texcoords[idx1.texcoord_index * 2])),
-                      move(static_cast<double>(attrib.texcoords[idx1.texcoord_index * 2 + 1])), 0.0);
-            vec3 tex2(move(static_cast<double>(attrib.texcoords[idx2.texcoord_index * 2])),
-                      move(static_cast<double>(attrib.texcoords[idx2.texcoord_index * 2 + 1])), 0.0);
+            vec3 tex0(static_cast<double>(attrib.texcoords[idx0.texcoord_index * 2]),
+                      static_cast<double>(attrib.texcoords[idx0.texcoord_index * 2 + 1]), 0.0);
+            vec3 tex1(static_cast<double>(attrib.texcoords[idx1.texcoord_index * 2]),
+                      static_cast<double>(attrib.texcoords[idx1.texcoord_index * 2 + 1]), 0.0);
+            vec3 tex2(static_cast<double>(attrib.texcoords[idx2.texcoord_index * 2]),
+                      static_cast<double>(attrib.texcoords[idx2.texcoord_index * 2 + 1]), 0.0);
 
             std::string material_name = obj_materials[obj_shapes[i].mesh.material_ids[f]].name;
             // elements[base_size + index_offset / 3] = make_shared<triangle>(p0, p1, p2, n0, n1, n2, materials[material_name]);

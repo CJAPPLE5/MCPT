@@ -114,6 +114,16 @@ public:
         STBI_FREE(data);
     }
 
+    int get_width()
+    {
+        return width;
+    }
+
+    int get_height()
+    {
+        return height;
+    }
+
     virtual color value(double u, double v, const vec3 &p) const override
     {
         // If we have no texture data, then return solid cyan as a debugging aid.
@@ -140,8 +150,11 @@ public:
         // x = y - 0;
         const double color_scale = 1.0 / 255.0;
         auto pixel = data + y * bytes_per_scanline + x * bytes_per_pixel;
+        double r = std::powf(color_scale * pixel[0], 2.2),
+               g = std::powf(color_scale * pixel[1], 2.2),
+               b = std::powf(color_scale * pixel[2], 2.2);
 
-        return color(color_scale * pixel[0], color_scale * pixel[1], color_scale * pixel[2]);
+        return color(r, g, b);
     }
 
 private:
