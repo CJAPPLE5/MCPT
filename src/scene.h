@@ -226,7 +226,10 @@ color Scene::shade(const ray &r, int depth)
 color Scene::shade_(const ray &r, hit_record &rec, int depth)
 {
     color l_total, l_e, l_direct, l_indirect;
-
+    if (depth == MAX_DEPTH)
+    {
+        return color();
+    }
     if (rec.mat_ptr->hasemission())
     {
         return rec.mat_ptr->getEmission();
@@ -286,14 +289,14 @@ color Scene::shade_(const ray &r, hit_record &rec, int depth)
             {
                 if (srec.scatter_type == REFRACT)
                 {
-                    l_indirect += shade(srec.scatter_ray, depth) * rec.mat_ptr->tr / srec.pdf / RUSSIAN_ROUETTE;
+                    l_indirect += shade_(srec.scatter_ray, temp_rec, depth) * rec.mat_ptr->tr / srec.pdf / RUSSIAN_ROUETTE;
                 }
                 else
                 {
                     if (cos0 > 0 && srec.pdf > 0)
                     {
                         vec3 coeff = rec.mat_ptr->brdf(r, rec, srec) * cos0 / srec.pdf / RUSSIAN_ROUETTE;
-                        l_indirect += coeff * shade(srec.scatter_ray, depth + 1);
+                        l_indirect += coeff * shade_(srec.scatter_ray, temp_rec, depth + 1);
                         // l_indirect += coeff * rec.mat_ptr->kd;
                     }
                 }

@@ -76,17 +76,19 @@ public:
         {
             pdiffus = 1.0f / (std::log10(ns) + 1.0f);
         }
-        preflec = 1 - pdiffus;
+        preflec = 1.0 - pdiffus;
         if (hasRefraction())
         {
-            prefrac = ni / (ni + 2);
+            // prefrac = ni / (ni + 5.0);
+            prefrac = 0.3;
+            // prefrac = 1.0;
         }
         else
         {
             prefrac = 0;
         }
-        pdiffus *= (1 - prefrac);
-        preflec *= (1 - prefrac);
+        pdiffus *= (1.0 - prefrac);
+        preflec *= (1.0 - prefrac);
     }
 
     void random_scatter_type(Scatter_type &st, double &pdf)
@@ -175,13 +177,6 @@ public:
             diffuse = diffuse * map_kd->value(rec.uv.x(), rec.uv.y(), rec.p);
         }
         vec3 temp_color = diffuse + specular;
-        // if (temp_color.e[0] > 1 || temp_color.e[1] > 1 || temp_color.e[2] > 1)
-        // {
-        //     auto len = (specular + diffuse);
-
-        //     specular = specular / len;
-        //     diffuse = diffuse / len;
-        // }
         specular *= std::pow(cos_nh, ns);
         return (diffuse / PI) + specular * ((ns + 2.0f) * (ns + 4.0f) / (8.0f * PI * (ns + std::pow(2.0, -ns / 2.0))));
         // +specular *((ns + 2.0f) * (ns + 4.0f) / (8.0f * M_PI * (ns + std::pow(2.0, -ns / 2.0))));
@@ -195,6 +190,7 @@ public:
         random_scatter_type(st, pdf);
         // srec.pdf = pdf;
         srec.scatter_ray.orig = rec.p;
+        srec.pdf = pdf;
         vec3 wi = -r_in.dir;
         vec3 wo;
         double inv_ni = 1 / ni;
@@ -209,7 +205,7 @@ public:
                 inv_ni = ni;
             }
             double cos0 = dot(wi, temp_n);
-            float cos1 = 1 - inv_ni * inv_ni * (1 - cos0 * cos0);
+            double cos1 = 1 - inv_ni * inv_ni * (1 - cos0 * cos0);
             if (cos1 > 0)
             {
                 wo = temp_n * (inv_ni * cos0 - std::sqrt(cos1)) - wi * inv_ni;
@@ -228,14 +224,14 @@ public:
         else if (st == DIFFUSE)
         {
             srec.scatter_ray.dir = random_hemisphere(-r_in.dir, rec.normal, ns, srec.pdf, p);
-            srec.pdf *= (1 - prefrac);
+            srec.pdf *= pdiffus;
             srec.scatter_type = DIFFUSE;
         }
         else
         {
             // std::cout << "reflec";
             srec.scatter_ray.dir = random_hemisphere_specular(-r_in.dir, rec.normal, ns, srec.pdf, p);
-            srec.pdf *= (1 - prefrac);
+            srec.pdf *= preflec;
             srec.scatter_type = REFLECT;
         }
     }
