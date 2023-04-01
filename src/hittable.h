@@ -27,6 +27,7 @@ struct hit_record
     double t = T_MAX;
     bool front_face;
     vec3 uv;
+    int mesh_id;
 
     inline void set_face_normal(const ray &r, const vec3 &outward_normal)
     {

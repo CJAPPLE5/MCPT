@@ -243,11 +243,11 @@ inline vec3 random_hemisphere(const vec3 &wi, const vec3 &normal, double ns, dou
     return direction;
 }
 
-inline vec3 random_hemisphere_specular(const vec3 &wi, const vec3 &normal, double ns, double &pdf, const float &pd)
+inline vec3 random_hemisphere_specular(const vec3 &wi, const vec3 &normal, double ns, double &pdf, double &pd)
 {
-    float cos_theta = std::pow(1 - random_double(), 1.0f / (ns + 2.0f));
-    float sin_theta = std::sqrt(1 - cos_theta * cos_theta);
-    float phi = TWO_PI * random_double();
+    double cos_theta = std::pow(1 - random_double(), 1.0f / (ns + 2.0f));
+    double sin_theta = std::sqrt(1 - cos_theta * cos_theta);
+    double phi = TWO_PI * random_double();
 
     vec3 x, y;
     calculateTangentSpace(normal, x, y);

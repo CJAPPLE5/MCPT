@@ -12,7 +12,8 @@ public:
     std::vector<double> tri_areas;
     std::vector<shared_ptr<hittable>> tri_list;
     shared_ptr<material> mat;
-    Mesh(const std::vector<shared_ptr<hittable>> &_triangles) : area(0.0)
+    int mesh_id;
+    Mesh(const std::vector<shared_ptr<hittable>> &_triangles, int mesh_id_) : area(0.0), mesh_id(mesh_id_)
     {
         tri_list = std::vector<shared_ptr<hittable>>(_triangles);
         tri_areas.resize(_triangles.size(), 0.0);
@@ -42,7 +43,15 @@ public:
     bool hit(
         const ray &r, double t_min, double t_max, hit_record &rec) const
     {
-        return mesh_bvh->hit(r, t_min, t_max, rec);
+        if (mesh_bvh->hit(r, t_min, t_max, rec))
+        {
+            rec.mesh_id = mesh_id;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     bool bounding_box(double time0, double time1, aabb &output_box) const

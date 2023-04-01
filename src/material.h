@@ -164,9 +164,9 @@ public:
 
     vec3 brdf(const ray &r, const hit_record &rec, const scatter_record &srec)
     {
-        // return kd / PI;
         vec3 wi = -r.dir, wo = srec.scatter_ray.dir;
         vec3 h = normalize(wi + wo);
+
         double cos_nh = fmax(0.0, dot(rec.normal, h));
         vec3 diffuse = kd;
         vec3 specular = ks;
@@ -175,16 +175,16 @@ public:
             diffuse = diffuse * map_kd->value(rec.uv.x(), rec.uv.y(), rec.p);
         }
         vec3 temp_color = diffuse + specular;
-        if (temp_color.e[0] > 1 || temp_color.e[1] > 1 || temp_color.e[2] > 1)
-        {
-            auto len = (specular + diffuse);
+        // if (temp_color.e[0] > 1 || temp_color.e[1] > 1 || temp_color.e[2] > 1)
+        // {
+        //     auto len = (specular + diffuse);
 
-            specular = specular / len;
-            diffuse = diffuse / len;
-        }
+        //     specular = specular / len;
+        //     diffuse = diffuse / len;
+        // }
         specular *= std::pow(cos_nh, ns);
-
         return (diffuse / PI) + specular * ((ns + 2.0f) * (ns + 4.0f) / (8.0f * PI * (ns + std::pow(2.0, -ns / 2.0))));
+        // +specular *((ns + 2.0f) * (ns + 4.0f) / (8.0f * M_PI * (ns + std::pow(2.0, -ns / 2.0))));
     }
 
     void scatter_(
@@ -201,6 +201,7 @@ public:
         double p = pdiffus / (pdiffus + preflec);
         if (st == REFRACT)
         {
+            // std::cout << "refra";
             vec3 temp_n = rec.normal;
             if (dot(wi, rec.normal) < 0)
             {
@@ -229,6 +230,7 @@ public:
         }
         else
         {
+            // std::cout << "reflec";
             srec.scatter_ray.dir = random_hemisphere_specular(-r_in.dir, rec.normal, ns, srec.pdf, p);
             srec.pdf *= (1 - prefrac);
             srec.scatter_type = REFLECT;

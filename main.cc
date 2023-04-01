@@ -81,6 +81,7 @@ int main(int argc, char **argv)
     {
         test_scene = std::stoi(argv[1]);
     }
+    xml_path = xml_paths[test_scene];
 
     xml_path = xml_paths[test_scene];
 
@@ -89,25 +90,32 @@ int main(int argc, char **argv)
         printf("read failed\n");
         return 0;
     }
-    // printf("argc:%d", argc);
+    std::vector<int> test_spps;
     if (argc > 2)
     {
-        rp.spp = std::stoi(argv[2]);
+        test_spps = {std::stoi(argv[2])};
     }
+<<<<<<< HEAD
     std::vector<int> ssp_test = {16, 32, 64, 128, 256, 512, 1024};
     // std::vector<int> ssp_test = {2, 4, 8};
     for (int i = 0; i < ssp_test.size(); i++)
+=======
+    else
     {
-        rp.spp = ssp_test[i];
+        test_spps = {16, 32, 64, 128, 256, 512, 1024};
+    }
+    // std::vector<int> test_spps = {2048, 4096};
+    for (int i = 0; i < test_spps.size(); i++)
+>>>>>>> 9c4622c1d3f632b98a724903aef74e4f821cce59
+    {
         unsigned char *img = new unsigned char[rp.image_height * rp.image_width * 3];
-
+        rp.spp = test_spps[i];
         print_render_info(rp);
 
         for (int j = rp.image_height - 1; j >= 0; --j)
         {
-            std::cerr << "\rssp:" << rp.spp
-                      << " Scanlines remaining: " << j << ' ' << std::flush;
-#pragma omp parallel for
+            std::cerr << "\rspp: " << rp.spp << " Scanlines remaining: " << j << ' ' << std::flush;
+            // #pragma omp parallel for
             for (int i = 0; i < rp.image_width; ++i)
             {
                 color pixel_color(0, 0, 0);
@@ -123,7 +131,8 @@ int main(int argc, char **argv)
                     // {
                     //     std::cout << "nmsl";
                     // }
-                    pixel_color += scene.shade(r, 0);
+                    // pixel_color += scene.shade(r, 0);
+                    pixel_color += scene.draw(r);
                     // if (temp_c[1] == 1.0 && temp_c[2] == 1.0)
                     // {
                     //     std::cout << "light" << pixel_color[0] << pixel_color[1] << pixel_color[2] << std::endl;

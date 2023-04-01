@@ -13,4 +13,5 @@ static constexpr int SHADE_DEPTH = 2;
 static constexpr int BVH_MAX = 100;
 static constexpr double RUSSIAN_ROUETTE = 0.95;
 static constexpr double T_MIN = EPSILON;
+static constexpr double MAX_DEPTH = 2;
 #endif
