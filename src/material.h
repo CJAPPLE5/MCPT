@@ -221,6 +221,9 @@ public:
             srec.scatter_ray.dir = wo;
             srec.pdf = pdf;
             srec.scatter_type = REFRACT;
+            // srec.scatter_ray.dir = random_refract(-r_in.dir, rec.normal, ni);
+            // srec.pdf = prefrac;
+            // srec.scatter_type = REFRACT;
         }
         else if (st == DIFFUSE)
         {

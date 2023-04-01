@@ -231,10 +231,10 @@ color Scene::shade_(const ray &r, hit_record &rec, int depth)
     {
         return rec.mat_ptr->getEmission();
     }
-    if (!rec.mat_ptr->hasRefraction())
-    {
-        rec.normal = dot(rec.normal, -r.dir) >= 0 ? rec.normal : -rec.normal;
-    }
+    // if (!rec.mat_ptr->hasRefraction())
+    // {
+    //     rec.normal = dot(rec.normal, -r.dir) >= 0 ? rec.normal : -rec.normal;
+    // }
 
     for (auto &mesh : meshes)
     {

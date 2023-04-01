@@ -150,16 +150,10 @@ public:
         // x = y - 0;
         const double color_scale = 1.0 / 255.0;
         auto pixel = data + y * bytes_per_scanline + x * bytes_per_pixel;
-<<<<<<< HEAD
         double r = std::powf(color_scale * pixel[0], 2.2),
                g = std::powf(color_scale * pixel[1], 2.2),
                b = std::powf(color_scale * pixel[2], 2.2);
 
-=======
-        double r = std::powf(color_scale * pixel[0], 2.2);
-        double g = std::powf(color_scale * pixel[1], 2.2);
-        double b = std::powf(color_scale * pixel[2], 2.2);
->>>>>>> 9c4622c1d3f632b98a724903aef74e4f821cce59
         return color(r, g, b);
     }
 

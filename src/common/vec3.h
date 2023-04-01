@@ -222,6 +222,14 @@ inline void calculateTangentSpace(const vec3 &normal, vec3 &x, vec3 &y)
     y = normalize(cross(z, x));
 }
 
+static double reflectance(double cosine, double ref_idx)
+{
+    // Use Schlick's approximation for reflectance.
+    auto r0 = (1 - ref_idx) / (1 + ref_idx);
+    r0 = r0 * r0;
+    return r0 + (1 - r0) * pow((1 - cosine), 5);
+}
+
 inline vec3 random_hemisphere(const vec3 &wi, const vec3 &normal, double ns, double &pdf, const double &pd)
 {
     // double theta = std::acos(std::pow(1 - random_double(), 1.0 / (ns)));
@@ -278,6 +286,24 @@ inline vec3 refract(const vec3 &uv, const vec3 &n, double etai_over_etat)
     vec3 r_out_perp = etai_over_etat * (uv + cos_theta * n);
     vec3 r_out_parallel = -sqrt(fabs(1.0 - r_out_perp.length_squared())) * n;
     return r_out_perp + r_out_parallel;
+}
+
+inline vec3 random_refract(const vec3 &wi, const vec3 &normal, double ni)
+{
+    double refraction_ratio = dot(normal, wi) > 0 ? ni : 1 / ni;
+
+    double cos_theta = fmin(dot(wi, normal), 1.0);
+    double sin_theta = sqrt(1.0 - cos_theta * cos_theta);
+
+    bool cannot_refract = refraction_ratio * sin_theta > 1.0;
+    vec3 direction;
+
+    if (cannot_refract || reflectance(cos_theta, refraction_ratio) > random_double())
+        direction = reflect(-wi, normal);
+    else
+        direction = refract(-wi, normal, refraction_ratio);
+
+    return direction;
 }
 
 class matrix

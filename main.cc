@@ -90,41 +90,33 @@ int main(int argc, char **argv)
         printf("read failed\n");
         return 0;
     }
-    std::vector<int> test_spps;
+    std::vector<int> ssp_test = {16, 32, 64, 128, 256, 512, 1024};
     if (argc > 2)
     {
-        test_spps = {std::stoi(argv[2])};
+        ssp_test = {std::stoi(argv[2])};
     }
-<<<<<<< HEAD
-    std::vector<int> ssp_test = {16, 32, 64, 128, 256, 512, 1024};
     // std::vector<int> ssp_test = {2, 4, 8};
-    for (int i = 0; i < ssp_test.size(); i++)
-=======
-    else
-    {
-        test_spps = {16, 32, 64, 128, 256, 512, 1024};
-    }
-    // std::vector<int> test_spps = {2048, 4096};
-    for (int i = 0; i < test_spps.size(); i++)
->>>>>>> 9c4622c1d3f632b98a724903aef74e4f821cce59
+    for (int s = 0; s < ssp_test.size(); s++)
     {
         unsigned char *img = new unsigned char[rp.image_height * rp.image_width * 3];
-        rp.spp = test_spps[i];
+        rp.spp = ssp_test[s];
         print_render_info(rp);
 
         for (int j = rp.image_height - 1; j >= 0; --j)
         {
             std::cerr << "\rspp: " << rp.spp << " Scanlines remaining: " << j << ' ' << std::flush;
-            // #pragma omp parallel for
+#pragma omp parallel for
             for (int i = 0; i < rp.image_width; ++i)
             {
                 color pixel_color(0, 0, 0);
                 for (int s = 0; s < rp.spp; ++s)
                 {
+                    // std::cout << "nmsl";
                     auto u = (i + random_double()) / (rp.image_width);
                     auto v = (j + random_double()) / (rp.image_height);
                     // auto u = float(i + 0.5) / (image_width);
                     // auto v = float(j + 0.5) / (image_height);
+
                     ray r = cam.get_ray(u, v);
                     // pixel_color += ray_color(r, background, scene, lights, max_depth);
                     // if (temp_c[0] < 0 || temp_c[1] < 0 || temp_c[2] < 0)
