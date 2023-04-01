@@ -102,7 +102,7 @@ color Scene::draw(const ray &r)
     }
     else
     {
-        return environment->value(0, 0, r.orig);
+        return color();
     }
 }
 
