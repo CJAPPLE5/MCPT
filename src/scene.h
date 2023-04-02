@@ -353,7 +353,7 @@ bool Scene::loadobj(std::string obj_path)
     // }
     if (!ret)
     {
-        printf("Failed to load/parse .obj.\n");
+        printf("Failed to load/parse .obj.%s\n", err.c_str());
         return false;
     }
 
