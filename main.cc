@@ -11,12 +11,9 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "rtweekend.h"
 
-#include "aarect.h"
-#include "box.h"
 #include "camera.h"
 #include "color.h"
 #include "material.h"
-#include "sphere.h"
 #include "scene.h"
 #include "omp.h"
 
@@ -75,7 +72,7 @@ int main(int argc, char **argv)
         "../../scenes/cornell-box/cornell-box.xml",
         "../../scenes/staircase/staircase.xml",
         "../../scenes/veach-mis/veach-mis.xml",
-    };
+        "../../scenes/car/car.xml"};
     int test_scene = 1;
     if (argc > 1)
     {

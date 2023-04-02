@@ -1,20 +1,9 @@
 #ifndef Scene_H
 #define Scene_H
-//==============================================================================================
-// Originally written in 2016 by Peter Shirley <ptrshrl@gmail.com>
-//
-// To the extent possible under law, the author(s) have dedicated all copyright and related and
-// neighboring rights to this software to the public domain worldwide. This software is
-// distributed without any warranty.
-//
-// You should have received a copy (see file COPYING.txt) of the CC0 Public Domain Dedication
-// along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
-//==============================================================================================
 
 #include "rtweekend.h"
 
 #include "hittable.h"
-#include "triangle.h"
 #include "bvh.h"
 #include "texture.h"
 #include "material.h"
@@ -69,8 +58,8 @@ private:
     // std::vector<shared_ptr<hittable>> elements;
     // std::vector<shared_ptr<hittable>> elements;
     std::map<std::string, shared_ptr<material>> materials;
-    std::vector<shared_ptr<Mesh>> meshes;
     std::vector<shared_ptr<Mesh>> lights;
+    std::vector<shared_ptr<Mesh>> meshes;
     std::vector<double> lights_area_ratio;
     // shared_ptr<bvh_node> bvh_root;
     shared_ptr<texture> environment;
@@ -123,11 +112,6 @@ color Scene::shade(const ray &r, int depth)
     {
         l_e = rec.mat_ptr->getEmission();
     }
-    if (rec.mat_ptr->hasTexture())
-    {
-        return rec.mat_ptr->map_kd->value(rec.uv.x(), rec.uv.y(), rec.p);
-    }
-
     if (!rec.mat_ptr->hasRefraction())
     {
         rec.normal = dot(rec.normal, -r.dir) >= 0 ? rec.normal : -rec.normal;
@@ -234,11 +218,6 @@ color Scene::shade_(const ray &r, hit_record &rec, int depth)
     {
         return rec.mat_ptr->getEmission();
     }
-    // if (!rec.mat_ptr->hasRefraction())
-    // {
-    //     rec.normal = dot(rec.normal, -r.dir) >= 0 ? rec.normal : -rec.normal;
-    // }
-
     for (auto &mesh : meshes)
     {
         color direct_light;
@@ -252,7 +231,7 @@ color Scene::shade_(const ray &r, hit_record &rec, int depth)
                 hit_record temp_rec;
                 ray shadow_ray(rec.p, light_dir);
                 if (hit(shadow_ray, T_MIN, T_MAX, temp_rec) && temp_rec.mesh_id == mesh->mesh_id &&
-                    dot(temp_rec.normal, light_dir) < 0 && (temp_rec.p - light_position).length() < EPSILON)
+                    dot(temp_rec.normal, light_dir) < 0)
                 {
                     double cos0 = fmax(dot(rec.normal, light_dir), 0.0);
                     double cos1 = fmax(dot(temp_rec.normal, -light_dir), 0.0);

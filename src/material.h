@@ -1,20 +1,10 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
-//==============================================================================================
-// Originally written in 2016 by Peter Shirley <ptrshrl@gmail.com>
-//
-// To the extent possible under law, the author(s) have dedicated all copyright and related and
-// neighboring rights to this software to the public domain worldwide. This software is
-// distributed without any warranty.
-//
-// You should have received a copy (see file COPYING.txt) of the CC0 Public Domain Dedication
-// along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
-//==============================================================================================
 
 #include "rtweekend.h"
 
-#include "pdf.h"
 #include "texture.h"
+#include "hittable.h"
 
 enum Scatter_type
 {
@@ -29,7 +19,6 @@ struct scatter_record
     Scatter_type scatter_type;
     color attenuation;
     double brdf;
-    shared_ptr<pdf> pdf_ptr;
     double pdf;
 };
 
@@ -61,9 +50,10 @@ public:
     vec3 kd, ks, ke, tr;
     double ni, ns;
     double threshold;
-    double prefrac, preflec, pdiffus;
+    double preflec, pdiffus;
     shared_ptr<image_texture> map_kd;
     bool has_texture;
+    double R0;
     material(const vec3 &_kd, const vec3 &_ks, const vec3 &_ke,
              const double &_ni, const double &_ns, const vec3 &_tr, bool has_texure_, shared_ptr<image_texture> _mat_texture)
         : kd(_kd), ks(_ks), ke(_ke), ni(_ni), ns(_ns), tr(_tr), has_texture(has_texure_), map_kd(_mat_texture)
@@ -79,35 +69,56 @@ public:
         preflec = 1.0 - pdiffus;
         if (hasRefraction())
         {
+            R0 = std::powf((1 - ni) / (1 + ni), 2);
             // prefrac = ni / (ni + 5.0);
-            prefrac = 0.3;
-            // prefrac = 1.0;
         }
         else
         {
-            prefrac = 0;
+            R0 = 0;
         }
-        pdiffus *= (1.0 - prefrac);
-        preflec *= (1.0 - prefrac);
     }
 
-    void random_scatter_type(Scatter_type &st, double &pdf)
+    double random_scatter_type(Scatter_type &st, double cosi, double &pdf)
     {
-        double p = random_double();
-        if (p < prefrac)
+        double Ri = R0 + (1 - R0) * std::powf(1 - cosi, 5);
+        if (hasRefraction())
         {
-            st = REFRACT;
-            pdf = prefrac;
-        }
-        else if (p >= prefrac && p <= prefrac + pdiffus)
-        {
-            st = DIFFUSE;
-            pdf = pdiffus;
+            double p = random_double();
+            if (p > Ri)
+            {
+                st = REFRACT;
+                pdf = (1 - Ri);
+            }
+            else
+            {
+                double p1 = random_double();
+                if (p1 < pdiffus)
+                {
+                    st = DIFFUSE;
+                    pdf = pdiffus * Ri;
+                }
+                else
+                {
+                    st = REFLECT;
+                    pdf = preflec * Ri;
+                }
+            }
+            return Ri;
         }
         else
         {
-            st = REFLECT;
-            pdf = preflec;
+            double p = random_double();
+            if (p < pdiffus)
+            {
+                st = DIFFUSE;
+                pdf = pdiffus;
+            }
+            else
+            {
+                st = REFLECT;
+                pdf = preflec;
+            }
+            return 1.0;
         }
     }
 
@@ -168,7 +179,6 @@ public:
     {
         vec3 wi = -r.dir, wo = srec.scatter_ray.dir;
         vec3 h = normalize(wi + wo);
-
         double cos_nh = fmax(0.0, dot(rec.normal, h));
         vec3 diffuse = kd;
         vec3 specular = ks;
@@ -177,6 +187,7 @@ public:
             diffuse = diffuse * map_kd->value(rec.uv.x(), rec.uv.y(), rec.p);
         }
         vec3 temp_color = diffuse + specular;
+        // return diffuse / PI + specular * (ns + 1) * std::powf(dot(rec.normal, h), ns) / (8 * PI * std::powf(dot(wo, h), 3));
         specular *= std::pow(cos_nh, ns);
         return (diffuse / PI) + specular * ((ns + 2.0f) * (ns + 4.0f) / (8.0f * PI * (ns + std::pow(2.0, -ns / 2.0))));
         // +specular *((ns + 2.0f) * (ns + 4.0f) / (8.0f * M_PI * (ns + std::pow(2.0, -ns / 2.0))));
@@ -187,7 +198,8 @@ public:
     {
         Scatter_type st;
         double pdf;
-        random_scatter_type(st, pdf);
+        double cosi = dot(rec.normal, -r_in.dir);
+        double Ri = random_scatter_type(st, cosi, pdf);
         // srec.pdf = pdf;
         srec.scatter_ray.orig = rec.p;
         srec.pdf = pdf;
@@ -195,7 +207,7 @@ public:
         vec3 wo;
         double inv_ni = 1 / ni;
         double p = pdiffus / (pdiffus + preflec);
-        if (st == REFRACT)
+        if (hasRefraction())
         {
             // std::cout << "refra";
             vec3 temp_n = rec.normal;
@@ -215,23 +227,23 @@ public:
                 wo = temp_n * 2 * ni - wi;
             }
             srec.scatter_ray.dir = wo;
-            srec.pdf = pdf;
+            srec.pdf = 1.0;
             srec.scatter_type = REFRACT;
             // srec.scatter_ray.dir = random_refract(-r_in.dir, rec.normal, ni);
             // srec.pdf = prefrac;
             // srec.scatter_type = REFRACT;
         }
-        else if (st == DIFFUSE)
+        // else if (st == DIFFUSE)
+        else if (random_double() < pdiffus)
         {
             srec.scatter_ray.dir = random_hemisphere(-r_in.dir, rec.normal, ns, srec.pdf, p);
-            srec.pdf *= pdiffus;
+            // srec.pdf *= Ri;
             srec.scatter_type = DIFFUSE;
         }
         else
         {
-            // std::cout << "reflec";
             srec.scatter_ray.dir = random_hemisphere_specular(-r_in.dir, rec.normal, ns, srec.pdf, p);
-            srec.pdf *= preflec;
+            // srec.pdf *= Ri;
             srec.scatter_type = REFLECT;
         }
     }

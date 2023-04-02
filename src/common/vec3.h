@@ -1,15 +1,5 @@
 #ifndef VEC3_H
 #define VEC3_H
-//==============================================================================================
-// Originally written in 2016 by Peter Shirley <ptrshrl@gmail.com>
-//
-// To the extent possible under law, the author(s) have dedicated all copyright and related and
-// neighboring rights to this software to the public domain worldwide. This software is
-// distributed without any warranty.
-//
-// You should have received a copy (see file COPYING.txt) of the CC0 Public Domain Dedication
-// along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
-//==============================================================================================
 
 #include <cmath>
 #include <iostream>
@@ -251,6 +241,11 @@ inline vec3 random_hemisphere(const vec3 &wi, const vec3 &normal, double ns, dou
     return direction;
 }
 
+inline vec3 reflect(const vec3 &v, const vec3 &n)
+{
+    return v - 2 * dot(v, n) * n;
+}
+
 inline vec3 random_hemisphere_specular(const vec3 &wi, const vec3 &normal, double ns, double &pdf, double &pd)
 {
     double cos_theta = std::pow(1 - random_double(), 1.0f / (ns + 2.0f));
@@ -273,11 +268,6 @@ inline vec3 random_hemisphere_specular(const vec3 &wi, const vec3 &normal, doubl
         pdf += pd * dot(normal, wo) / PI;
     }
     return wo;
-}
-
-inline vec3 reflect(const vec3 &v, const vec3 &n)
-{
-    return v - 2 * dot(v, n) * n;
 }
 
 inline vec3 refract(const vec3 &uv, const vec3 &n, double etai_over_etat)
